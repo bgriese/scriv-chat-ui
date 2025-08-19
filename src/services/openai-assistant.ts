@@ -18,9 +18,9 @@ export class OpenAIAssistantService {
       return response.data.map(assistant => ({
         id: assistant.id,
         name: assistant.name || 'Unnamed Assistant',
-        description: assistant.description,
+        description: assistant.description ?? undefined,
         model: assistant.model,
-        instructions: assistant.instructions,
+        instructions: assistant.instructions ?? undefined,
         tools: assistant.tools
       }))
     } catch (error) {
