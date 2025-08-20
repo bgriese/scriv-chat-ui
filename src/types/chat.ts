@@ -29,12 +29,17 @@ export interface OpenAIAssistant {
   tools?: any[]
 }
 
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high'
+export type VerbosityLevel = 'low' | 'medium' | 'high'
+
 export interface ChatRequest {
   message: string
   provider: ChatProvider
   threadId?: string
   assistantId?: string
   model?: string
+  reasoningEffort?: ReasoningEffort
+  verbosity?: VerbosityLevel
 }
 
 export interface ChatResponse {

@@ -7,7 +7,7 @@ import { ChatRequest, ChatResponse, ChatMessage } from '@/types/chat'
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json()
-    const { message, provider, threadId, assistantId, model } = body
+    const { message, provider, threadId, assistantId, model, reasoningEffort, verbosity } = body
 
     if (!message?.trim()) {
       return NextResponse.json(
@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
         responseMessage = await service.sendMessage(
           message,
           conversationHistory,
-          model || 'gpt-4o-mini'
+          model || 'gpt-4o-mini',
+          reasoningEffort,
+          verbosity
         )
         break
       }

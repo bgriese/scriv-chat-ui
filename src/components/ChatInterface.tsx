@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChatMessage, ChatProvider, OpenAIAssistant } from '@/types/chat'
+import { ChatMessage, ChatProvider, OpenAIAssistant, ReasoningEffort, VerbosityLevel } from '@/types/chat'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import ProviderSelector from './ProviderSelector'
 import AssistantSelector from './AssistantSelector'
+import ModelSelector from './ModelSelector'
+import ReasoningEffortSelector from './ReasoningEffortSelector'
+import VerbositySelector from './VerbositySelector'
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -14,12 +17,27 @@ export default function ChatInterface() {
   const [threadId, setThreadId] = useState<string>()
   const [assistants, setAssistants] = useState<OpenAIAssistant[]>([])
   const [selectedAssistant, setSelectedAssistant] = useState<string>()
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-4o-mini')
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('medium')
+  const [verbosity, setVerbosity] = useState<VerbosityLevel>('medium')
 
   useEffect(() => {
     if (provider === 'openai-assistant') {
       fetchAssistants()
     }
   }, [provider])
+
+  // Helper functions for model type detection
+  const isReasoningModel = (model: string) => {
+    return model.startsWith('gpt-5') || model.startsWith('o3-') || model.startsWith('o4-')
+  }
+
+  const isGPT5Model = (model: string) => {
+    return model.startsWith('gpt-5')
+  }
+
+  const showReasoningControls = provider === 'openai-chat' && isReasoningModel(selectedModel)
+  const showVerbosityControl = showReasoningControls && isGPT5Model(selectedModel)
 
   const fetchAssistants = async () => {
     try {
@@ -68,7 +86,10 @@ export default function ChatInterface() {
           message: content,
           provider,
           threadId,
-          assistantId: selectedAssistant
+          assistantId: selectedAssistant,
+          model: provider === 'openai-chat' ? selectedModel : undefined,
+          ...(showReasoningControls && { reasoningEffort }),
+          ...(showVerbosityControl && { verbosity })
         })
       })
 
@@ -134,6 +155,27 @@ export default function ChatInterface() {
                 selectedAssistant={selectedAssistant}
                 onChange={setSelectedAssistant}
                 isLoading={assistants.length === 0}
+              />
+            )}
+            
+            {provider === 'openai-chat' && (
+              <ModelSelector
+                model={selectedModel}
+                onChange={setSelectedModel}
+              />
+            )}
+            
+            {showReasoningControls && (
+              <ReasoningEffortSelector
+                reasoningEffort={reasoningEffort}
+                onChange={setReasoningEffort}
+              />
+            )}
+            
+            {showVerbosityControl && (
+              <VerbositySelector
+                verbosity={verbosity}
+                onChange={setVerbosity}
               />
             )}
           </div>
