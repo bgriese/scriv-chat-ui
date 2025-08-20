@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { OpenAIAssistantService } from '@/services/openai-assistant'
 import { OpenAIChatService } from '@/services/openai-chat'
-import { N8nService } from '@/services/n8n'
 import { ChatRequest, ChatResponse, ChatMessage } from '@/types/chat'
 
 export async function POST(request: NextRequest) {
@@ -70,24 +69,6 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      case 'n8n': {
-        const webhookUrl = process.env.N8N_WEBHOOK_URL
-        if (!webhookUrl) {
-          return NextResponse.json(
-            { error: 'n8n webhook URL not configured' },
-            { status: 500 }
-          )
-        }
-
-        const service = new N8nService(
-          webhookUrl,
-          process.env.N8N_API_URL,
-          process.env.N8N_API_KEY
-        )
-
-        responseMessage = await service.sendMessage(message, threadId, { model })
-        break
-      }
 
       default:
         return NextResponse.json(
@@ -114,7 +95,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    providers: ['openai-assistant', 'openai-chat', 'n8n'],
+    providers: ['openai-assistant', 'openai-chat'],
     status: 'Chat API is running'
   })
 }

@@ -1,4 +1,4 @@
-export type ChatProvider = 'openai-assistant' | 'openai-chat' | 'n8n'
+export type ChatProvider = 'openai-assistant' | 'openai-chat'
 
 export type MessageRole = 'user' | 'assistant' | 'system'
 
@@ -69,11 +69,6 @@ export interface AssistantRun {
   assistantId: string
 }
 
-export interface N8nWebhookPayload {
-  message: string
-  threadId?: string
-  metadata?: Record<string, any>
-}
 
 export interface TemplateImportData {
   documentName: string
@@ -107,10 +102,5 @@ export interface ProviderConfig {
   openai?: {
     apiKey: string
     defaultAssistantId?: string
-  }
-  n8n?: {
-    webhookUrl: string
-    apiUrl?: string
-    apiKey?: string
   }
 }

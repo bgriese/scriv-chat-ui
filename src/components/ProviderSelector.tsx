@@ -18,11 +18,6 @@ export default function ProviderSelector({ provider, onChange }: ProviderSelecto
       value: 'openai-assistant',
       label: 'OpenAI Assistant',
       description: 'Stateful OpenAI assistants with threads'
-    },
-    {
-      value: 'n8n',
-      label: 'n8n Workflow',
-      description: 'Custom n8n automation workflows'
     }
   ]
 
