@@ -75,6 +75,34 @@ export interface N8nWebhookPayload {
   metadata?: Record<string, any>
 }
 
+export interface TemplateImportData {
+  documentName: string
+  notes: string
+  mustache: string
+  docSchema: string
+  threadId?: string
+}
+
+export interface TemplateImportRequest {
+  documentName: string
+  notes: string
+  mustache: string
+  docSchema: string
+  threadId?: string
+}
+
+export interface TemplateImportResponse {
+  sessionId: string
+  expiresAt: Date
+}
+
+export interface TemplateSession {
+  id: string
+  data: TemplateImportData
+  expiresAt: Date
+  createdAt: Date
+}
+
 export interface ProviderConfig {
   openai?: {
     apiKey: string

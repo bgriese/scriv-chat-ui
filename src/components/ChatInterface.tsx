@@ -27,6 +27,33 @@ export default function ChatInterface() {
     }
   }, [provider])
 
+  useEffect(() => {
+    // Check for template-initialized conversation
+    loadTemplateInitializedChat()
+  }, [])
+
+  const loadTemplateInitializedChat = () => {
+    const templateChatData = sessionStorage.getItem('template-chat-init')
+    if (templateChatData) {
+      try {
+        const data = JSON.parse(templateChatData)
+        setMessages(data.messages || [])
+        setProvider(data.provider || 'openai-chat')
+        setThreadId(data.threadId)
+        setSelectedAssistant(data.assistantId)
+        setSelectedModel(data.model || 'gpt-4o-mini')
+        setReasoningEffort(data.reasoningEffort || 'medium')
+        setVerbosity(data.verbosity || 'medium')
+        
+        // Clear the session storage to prevent re-loading
+        sessionStorage.removeItem('template-chat-init')
+      } catch (error) {
+        console.error('Failed to load template chat data:', error)
+        sessionStorage.removeItem('template-chat-init')
+      }
+    }
+  }
+
   // Helper functions for model type detection
   const isReasoningModel = (model: string) => {
     return model.startsWith('gpt-5') || model.startsWith('o3-') || model.startsWith('o4-')
