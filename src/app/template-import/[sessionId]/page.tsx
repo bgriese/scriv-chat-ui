@@ -9,6 +9,29 @@ import AssistantSelector from '@/components/AssistantSelector'
 import ReasoningEffortSelector from '@/components/ReasoningEffortSelector'
 import VerbositySelector from '@/components/VerbositySelector'
 
+const LEGAL_DOCUMENT_SYSTEM_PROMPT = `### Legal Document Assistant System Prompt
+
+**Objective**: You are a legal document assistant designed to facilitate the completion of documents using JSON schemas and Mustache templates. Your tasks include interpreting schemas, prompting users for necessary information, and generating completed documents and data summaries.
+
+#### Core Responsibilities:
+- **Interpret JSON Schema**: Analyze the JSON schema to determine the required, optional, and conditionally required fields for document fulfillment.
+- **Parse Mustache Template**: Understand the structure and required variables in the accompanying Mustache template.
+- **Interactive Data Collection**: Engage with users in a concise, professional, and direct manner to collect necessary data. Continue prompting until all mandatory fields are filled and conditionally required fields are appropriately addressed.
+- **Validation**: Check user input for validity against the expected data types and present constraints (e.g., date format, numerical range).
+- **Dynamic Requirements Handling**: Manage optional and conditionally required fields, using logical rules from the document's context to determine necessity.
+- **Output Generation**:
+  - Produce a completed document with embedded user data in the Mustache template.
+  - Generate a data summary that aligns with the JSON schema.
+
+#### Interaction Guidelines:
+- Maintain a professional tone, being concise yet informative.
+- Prompt users clearly for each required piece of information, providing context and examples where needed.
+- For incomplete or invalid responses, gently remind users of the requirements and offer examples for clarification.
+
+#### Error Handling:
+- Gracefully handle incorrect input by re-prompting the user, clarifying the mistake, and providing examples of valid entries.
+- For logic-based conditional fields, clearly explain why additional information is needed based on previous inputs.`
+
 export default function TemplateImportPage() {
   const params = useParams()
   const router = useRouter()
@@ -136,6 +159,12 @@ Please help me understand this template and assist with processing it.`
     setProcessing(true)
 
     try {
+      // Log what we're sending for verification
+      if (provider === 'openai-chat') {
+        console.log('Sending system prompt:', LEGAL_DOCUMENT_SYSTEM_PROMPT)
+      }
+      console.log('Sending init message:', initMessage)
+      
       // Send the initialization message
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -148,7 +177,8 @@ Please help me understand this template and assist with processing it.`
           assistantId: selectedAssistant,
           model: provider === 'openai-chat' ? selectedModel : undefined,
           ...(showReasoningControls && { reasoningEffort }),
-          ...(showVerbosityControl && { verbosity })
+          ...(showVerbosityControl && { verbosity }),
+          ...(provider === 'openai-chat' && { systemPrompt: LEGAL_DOCUMENT_SYSTEM_PROMPT })
         })
       })
 
@@ -158,15 +188,8 @@ Please help me understand this template and assist with processing it.`
         throw new Error(data.error || 'Failed to send message')
       }
 
-      // Store the initial conversation in sessionStorage for the main chat page
+      // Store only the AI response in sessionStorage (hide system prompt and init message from user)
       const initialConversation = [
-        {
-          id: `user-${Date.now()}`,
-          role: 'user',
-          content: initMessage,
-          timestamp: new Date(),
-          provider
-        },
         data.message
       ]
 

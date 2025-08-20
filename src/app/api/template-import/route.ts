@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
       threadId
     })
 
+    console.log(`Created session: ${session.id}`)
+
     const response: TemplateImportResponse = {
       sessionId: session.id,
       expiresAt: session.expiresAt

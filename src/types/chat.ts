@@ -40,6 +40,7 @@ export interface ChatRequest {
   model?: string
   reasoningEffort?: ReasoningEffort
   verbosity?: VerbosityLevel
+  systemPrompt?: string
 }
 
 export interface ChatResponse {

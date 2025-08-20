@@ -6,7 +6,15 @@ import { ChatRequest, ChatResponse, ChatMessage } from '@/types/chat'
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json()
-    const { message, provider, threadId, assistantId, model, reasoningEffort, verbosity } = body
+    const { message, provider, threadId, assistantId, model, reasoningEffort, verbosity, systemPrompt } = body
+
+    // Log what we received for verification
+    console.log(`Chat API - Provider: ${provider}`)
+    if (systemPrompt) {
+      console.log('Chat API - System prompt received (length):', systemPrompt.length)
+      console.log('Chat API - System prompt preview:', systemPrompt.substring(0, 100) + '...')
+    }
+    console.log('Chat API - Message preview:', message.substring(0, 100) + '...')
 
     if (!message?.trim()) {
       return NextResponse.json(
@@ -64,7 +72,8 @@ export async function POST(request: NextRequest) {
           conversationHistory,
           model || 'gpt-4o-mini',
           reasoningEffort,
-          verbosity
+          verbosity,
+          systemPrompt
         )
         break
       }

@@ -16,15 +16,18 @@ export async function GET(
       )
     }
 
+    console.log(`Attempting to fetch session: ${sessionId}`)
     const session = getSession(sessionId)
 
     if (!session) {
+      console.log(`Session not found: ${sessionId}`)
       return NextResponse.json(
         { error: 'Session not found or expired' },
         { status: 404 }
       )
     }
 
+    console.log(`Session found: ${sessionId}`)
     return NextResponse.json(session)
 
   } catch (error: any) {

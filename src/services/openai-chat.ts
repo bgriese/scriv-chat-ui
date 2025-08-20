@@ -84,19 +84,31 @@ export class OpenAIChatService {
     conversationHistory: ChatMessage[] = [],
     model: string = 'gpt-4o-mini',
     reasoningEffort?: ReasoningEffort,
-    verbosity?: VerbosityLevel
+    verbosity?: VerbosityLevel,
+    systemPrompt?: string
   ): Promise<ChatMessage> {
     try {
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        ...conversationHistory.map(msg => ({
-          role: msg.role as 'user' | 'assistant' | 'system',
-          content: msg.content
-        })),
-        {
-          role: 'user' as const,
-          content: message
-        }
-      ]
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = []
+      
+      // Add system prompt if provided
+      if (systemPrompt) {
+        messages.push({
+          role: 'system' as const,
+          content: systemPrompt
+        })
+      }
+      
+      // Add conversation history
+      messages.push(...conversationHistory.map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content
+      })))
+      
+      // Add current user message
+      messages.push({
+        role: 'user' as const,
+        content: message
+      })
 
       const completionParams = this.buildCompletionParams(
         model,
