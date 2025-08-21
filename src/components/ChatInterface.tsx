@@ -43,6 +43,7 @@ export default function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4o-mini')
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('medium')
   const [verbosity, setVerbosity] = useState<VerbosityLevel>('medium')
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
 
   useEffect(() => {
     if (provider === 'openai-assistant') {
@@ -183,9 +184,20 @@ export default function ChatInterface() {
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Multi-Provider Chat
-            </h1>
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Multi-Provider Chat
+              </h1>
+              <button
+                onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                aria-label={isHeaderCollapsed ? 'Expand controls' : 'Collapse controls'}
+              >
+                <svg className={`w-5 h-5 transform transition-transform ${isHeaderCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
             <button
               onClick={clearMessages}
               className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
@@ -194,41 +206,45 @@ export default function ChatInterface() {
             </button>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4">
-            <ProviderSelector
-              provider={provider}
-              onChange={setProvider}
-            />
-            
-            {provider === 'openai-assistant' && (
-              <AssistantSelector
-                assistants={assistants}
-                selectedAssistant={selectedAssistant}
-                onChange={setSelectedAssistant}
-                isLoading={assistants.length === 0}
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+          }`}>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <ProviderSelector
+                provider={provider}
+                onChange={setProvider}
               />
-            )}
-            
-            {provider === 'openai-chat' && (
-              <ModelSelector
-                model={selectedModel}
-                onChange={setSelectedModel}
-              />
-            )}
-            
-            {showReasoningControls && (
-              <ReasoningEffortSelector
-                reasoningEffort={reasoningEffort}
-                onChange={setReasoningEffort}
-              />
-            )}
-            
-            {showVerbosityControl && (
-              <VerbositySelector
-                verbosity={verbosity}
-                onChange={setVerbosity}
-              />
-            )}
+              
+              {provider === 'openai-assistant' && (
+                <AssistantSelector
+                  assistants={assistants}
+                  selectedAssistant={selectedAssistant}
+                  onChange={setSelectedAssistant}
+                  isLoading={assistants.length === 0}
+                />
+              )}
+              
+              {provider === 'openai-chat' && (
+                <ModelSelector
+                  model={selectedModel}
+                  onChange={setSelectedModel}
+                />
+              )}
+              
+              {showReasoningControls && (
+                <ReasoningEffortSelector
+                  reasoningEffort={reasoningEffort}
+                  onChange={setReasoningEffort}
+                />
+              )}
+              
+              {showVerbosityControl && (
+                <VerbositySelector
+                  verbosity={verbosity}
+                  onChange={setVerbosity}
+                />
+              )}
+            </div>
           </div>
         </div>
       </header>
