@@ -50,8 +50,8 @@ export default function ExportConfirmationDialog({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full m-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full h-full max-w-6xl max-h-[95vh] flex flex-col">
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -63,52 +63,55 @@ export default function ExportConfirmationDialog({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-hidden flex flex-col space-y-4">
-          {/* Document Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Document Title
-            </label>
-            <input
-              type="text"
-              value={documentTitle}
-              onChange={(e) => setDocumentTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter document title..."
-            />
-          </div>
+        <div className="flex-1 p-6 overflow-hidden flex flex-col space-y-4 min-h-0">
+          {/* Top controls row */}
+          <div className="flex gap-6 flex-shrink-0">
+            {/* Document Title */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Document Title
+              </label>
+              <input
+                type="text"
+                value={documentTitle}
+                onChange={(e) => setDocumentTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter document title..."
+              />
+            </div>
 
-          {/* Format Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Export Format
-            </label>
-            <div className="flex gap-2">
-              {(['pdf', 'docx', 'markdown', 'html'] as const).map((format) => (
-                <button
-                  key={format}
-                  onClick={() => setSelectedFormat(format)}
-                  className={`px-3 py-2 text-xs rounded-md transition-colors ${
-                    selectedFormat === format
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {format.toUpperCase()}
-                </button>
-              ))}
+            {/* Format Selection */}
+            <div className="flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Export Format
+              </label>
+              <div className="flex gap-2">
+                {(['pdf', 'docx', 'markdown', 'html'] as const).map((format) => (
+                  <button
+                    key={format}
+                    onClick={() => setSelectedFormat(format)}
+                    className={`px-3 py-2 text-xs rounded-md transition-colors ${
+                      selectedFormat === format
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {format.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Content Editor */}
-          <div className="flex-1 flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {/* Content Editor - Takes up remaining space */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex-shrink-0">
               Document Content
             </label>
             <textarea
               value={editableContent}
               onChange={(e) => setEditableContent(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
+              className="flex-1 min-h-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
               placeholder="Edit the document content..."
             />
           </div>
