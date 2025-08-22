@@ -6,9 +6,10 @@ import { ChatMessage } from '@/types/chat'
 interface MessageListProps {
   messages: ChatMessage[]
   isLoading: boolean
+  onExportFromMessage?: (messageIndex: number) => void
 }
 
-export default function MessageList({ messages, isLoading }: MessageListProps) {
+export default function MessageList({ messages, isLoading, onExportFromMessage }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -58,40 +59,66 @@ export default function MessageList({ messages, isLoading }: MessageListProps) {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => (
+      {messages.map((message, index) => (
         <div
           key={message.id}
-          className={`flex ${
+          className={`flex group ${
             message.role === 'user' ? 'justify-end' : 'justify-start'
           }`}
         >
-          <div
-            className={`max-w-[70%] rounded-lg px-4 py-3 ${
-              message.role === 'user'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-medium">
-                {message.role === 'user' ? 'You' : 'Assistant'}
-              </span>
-              {message.provider && message.role === 'assistant' && (
-                <span className={`text-xs px-2 py-1 rounded-full ${getProviderColor(message.provider)}`}>
-                  {getProviderName(message.provider)}
+          <div className="flex items-start gap-2 max-w-[75%]">
+            {message.role === 'assistant' && onExportFromMessage && (
+              <button
+                onClick={() => onExportFromMessage(index)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-2 p-1 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                title="Export from this message"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+            )}
+            
+            <div
+              className={`rounded-lg px-4 py-3 ${
+                message.role === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium">
+                  {message.role === 'user' ? 'You' : 'Assistant'}
                 </span>
-              )}
-              <span className="text-xs opacity-70">
-                {formatTime(message.timestamp)}
-              </span>
-            </div>
-            <div className="whitespace-pre-wrap text-sm">
-              {message.content}
-            </div>
-            {message.metadata?.usage && (
-              <div className="text-xs opacity-50 mt-2">
-                Tokens: {message.metadata.usage.total_tokens}
+                {message.provider && message.role === 'assistant' && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${getProviderColor(message.provider)}`}>
+                    {getProviderName(message.provider)}
+                  </span>
+                )}
+                <span className="text-xs opacity-70">
+                  {formatTime(message.timestamp)}
+                </span>
               </div>
+              <div className="whitespace-pre-wrap text-sm">
+                {message.content}
+              </div>
+              {message.metadata?.usage && (
+                <div className="text-xs opacity-50 mt-2">
+                  Tokens: {message.metadata.usage.total_tokens}
+                </div>
+              )}
+            </div>
+            
+            {message.role === 'user' && onExportFromMessage && (
+              <button
+                onClick={() => onExportFromMessage(index)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-2 p-1 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                title="Export from this message"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
             )}
           </div>
         </div>

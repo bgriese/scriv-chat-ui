@@ -9,6 +9,7 @@ import AssistantSelector from './AssistantSelector'
 import ModelSelector from './ModelSelector'
 import ReasoningEffortSelector from './ReasoningEffortSelector'
 import VerbositySelector from './VerbositySelector'
+import ExportConfirmationDialog from './ExportConfirmationDialog'
 
 const LEGAL_DOCUMENT_SYSTEM_PROMPT = `### Legal Document Assistant System Prompt
 
@@ -45,6 +46,9 @@ export default function ChatInterface() {
   const [verbosity, setVerbosity] = useState<VerbosityLevel>('medium')
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [selectedMessages, setSelectedMessages] = useState<ChatMessage[]>([])
+  const [exportStartIndex, setExportStartIndex] = useState<number>(0)
 
   useEffect(() => {
     if (provider === 'openai-assistant') {
@@ -178,6 +182,82 @@ export default function ChatInterface() {
   const clearMessages = () => {
     setMessages([])
     setThreadId(undefined)
+  }
+
+  const handleExportFromMessage = (messageIndex: number) => {
+    // Export from this message onwards (include all subsequent messages)
+    const messagesToExport = messages.slice(messageIndex)
+    setSelectedMessages(messagesToExport)
+    setExportStartIndex(messageIndex)
+    setIsExportDialogOpen(true)
+  }
+
+  const handleConfirmExport = async (content: string, title: string, format: 'pdf' | 'docx' | 'markdown' | 'html') => {
+    setIsExporting(true)
+
+    try {
+      // Get template data from session storage if available
+      const templateChatData = sessionStorage.getItem('template-chat-init')
+      let templateData = undefined
+      
+      if (templateChatData) {
+        try {
+          const data = JSON.parse(templateChatData)
+          templateData = data.templateData
+        } catch (error) {
+          console.warn('Could not parse template data:', error)
+        }
+      }
+
+      // Create a custom message structure for the formatted content
+      const customMessage: ChatMessage = {
+        id: `custom-export-${Date.now()}`,
+        role: 'assistant',
+        content,
+        timestamp: new Date(),
+        provider: 'export'
+      }
+
+      const formatRequest = {
+        messages: [customMessage].map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })),
+        templateData,
+        format,
+        title,
+        options: {
+          includeSystemMessages: false,
+          includeTimestamps: false,
+          useMarkdownStyling: true
+        }
+      }
+
+      const response = await fetch('http://localhost:3003/api/format', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formatRequest)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to format document')
+      }
+
+      const result = await response.json()
+      
+      // Download the document
+      const downloadUrl = `http://localhost:3003${result.downloadUrl}?format=${format}`
+      window.open(downloadUrl, '_blank')
+
+    } catch (error: any) {
+      console.error('Export error:', error)
+      alert(`Failed to export document: ${error.message}`)
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const exportDocument = async (format: 'pdf' | 'docx' | 'markdown' | 'html') => {
@@ -360,6 +440,7 @@ export default function ChatInterface() {
         <MessageList 
           messages={messages} 
           isLoading={isLoading}
+          onExportFromMessage={handleExportFromMessage}
         />
         
         <MessageInput 
@@ -367,6 +448,15 @@ export default function ChatInterface() {
           isLoading={isLoading}
         />
       </div>
+
+      {/* Export Confirmation Dialog */}
+      <ExportConfirmationDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        onConfirm={handleConfirmExport}
+        selectedMessages={selectedMessages}
+        defaultTitle={`Export_from_message_${exportStartIndex + 1}_${new Date().toISOString().split('T')[0]}`}
+      />
     </div>
   )
 }
