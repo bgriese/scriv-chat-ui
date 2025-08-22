@@ -41,6 +41,7 @@ export interface ChatRequest {
   reasoningEffort?: ReasoningEffort
   verbosity?: VerbosityLevel
   systemPrompt?: string
+  conversationHistory?: ChatMessage[]
 }
 
 export interface ChatResponse {

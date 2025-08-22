@@ -44,6 +44,7 @@ export default function ChatInterface() {
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('medium')
   const [verbosity, setVerbosity] = useState<VerbosityLevel>('medium')
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     if (provider === 'openai-assistant') {
@@ -128,10 +129,7 @@ export default function ChatInterface() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(provider === 'openai-chat' && messages.length > 0 && {
-            'x-conversation-history': JSON.stringify(messages)
-          })
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           message: content,
@@ -141,7 +139,10 @@ export default function ChatInterface() {
           model: provider === 'openai-chat' ? selectedModel : undefined,
           ...(showReasoningControls && { reasoningEffort }),
           ...(showVerbosityControl && { verbosity }),
-          ...(provider === 'openai-chat' && { systemPrompt: LEGAL_DOCUMENT_SYSTEM_PROMPT })
+          ...(provider === 'openai-chat' && { 
+            systemPrompt: LEGAL_DOCUMENT_SYSTEM_PROMPT,
+            conversationHistory: messages
+          })
         })
       })
 
@@ -179,37 +180,94 @@ export default function ChatInterface() {
     setThreadId(undefined)
   }
 
+  const exportDocument = async (format: 'pdf' | 'docx' | 'markdown' | 'html') => {
+    if (messages.length === 0) {
+      alert('No messages to export')
+      return
+    }
+
+    setIsExporting(true)
+
+    try {
+      // Get template data from session storage if available
+      const templateChatData = sessionStorage.getItem('template-chat-init')
+      let templateData = undefined
+      
+      if (templateChatData) {
+        try {
+          const data = JSON.parse(templateChatData)
+          templateData = data.templateData
+        } catch (error) {
+          console.warn('Could not parse template data:', error)
+        }
+      }
+
+      const formatRequest = {
+        messages: messages.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })),
+        templateData,
+        format,
+        title: templateData?.documentName || `Chat_Document_${new Date().toISOString().split('T')[0]}`,
+        options: {
+          includeSystemMessages: false,
+          includeTimestamps: true,
+          useMarkdownStyling: true
+        }
+      }
+
+      const response = await fetch('http://localhost:3003/api/format', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formatRequest)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to format document')
+      }
+
+      const result = await response.json()
+      
+      // Download the document
+      const downloadUrl = `http://localhost:3003${result.downloadUrl}?format=${format}`
+      window.open(downloadUrl, '_blank')
+
+    } catch (error: any) {
+      console.error('Export error:', error)
+      alert(`Failed to export document: ${error.message}`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto">
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+    <div className="flex h-screen">
+      {/* Sidebar with Multi-Provider Chat Controls */}
+      <aside className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col">
         <div className="flex flex-col space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Multi-Provider Chat
-              </h1>
-              <button
-                onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                aria-label={isHeaderCollapsed ? 'Expand controls' : 'Collapse controls'}
-              >
-                <svg className={`w-5 h-5 transform transition-transform ${isHeaderCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Multi-Provider Chat
+            </h1>
             <button
-              onClick={clearMessages}
-              className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
+              onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+              className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              aria-label={isHeaderCollapsed ? 'Expand controls' : 'Collapse controls'}
             >
-              Clear Chat
+              <svg className={`w-4 h-4 transform transition-transform ${isHeaderCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
           </div>
           
           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+            isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-none opacity-100'
           }`}>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col gap-4">
               <ProviderSelector
                 provider={provider}
                 onChange={setProvider}
@@ -247,8 +305,57 @@ export default function ChatInterface() {
             </div>
           </div>
         </div>
-      </header>
+        
+        <div className="mt-auto pt-4 space-y-3">
+          {/* Export Document Section */}
+          {messages.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Export Document
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => exportDocument('pdf')}
+                  disabled={isExporting}
+                  className="px-3 py-2 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:cursor-not-allowed"
+                >
+                  {isExporting ? '...' : 'PDF'}
+                </button>
+                <button
+                  onClick={() => exportDocument('docx')}
+                  disabled={isExporting}
+                  className="px-3 py-2 text-xs bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:cursor-not-allowed"
+                >
+                  {isExporting ? '...' : 'DOCX'}
+                </button>
+                <button
+                  onClick={() => exportDocument('markdown')}
+                  disabled={isExporting}
+                  className="px-3 py-2 text-xs bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:cursor-not-allowed"
+                >
+                  {isExporting ? '...' : 'MD'}
+                </button>
+                <button
+                  onClick={() => exportDocument('html')}
+                  disabled={isExporting}
+                  className="px-3 py-2 text-xs bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:cursor-not-allowed"
+                >
+                  {isExporting ? '...' : 'HTML'}
+                </button>
+              </div>
+            </div>
+          )}
+          
+          <button
+            onClick={clearMessages}
+            className="w-full px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
+          >
+            Clear Chat
+          </button>
+        </div>
+      </aside>
 
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-h-0">
         <MessageList 
           messages={messages} 

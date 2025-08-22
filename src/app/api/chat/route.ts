@@ -6,7 +6,7 @@ import { ChatRequest, ChatResponse, ChatMessage } from '@/types/chat'
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json()
-    const { message, provider, threadId, assistantId, model, reasoningEffort, verbosity, systemPrompt } = body
+    const { message, provider, threadId, assistantId, model, reasoningEffort, verbosity, systemPrompt, conversationHistory } = body
 
     // Log what we received for verification
     console.log(`Chat API - Provider: ${provider}`)
@@ -55,21 +55,12 @@ export async function POST(request: NextRequest) {
       case 'openai-chat': {
         const service = new OpenAIChatService(apiKey!)
         
-        let conversationHistory: ChatMessage[] = []
-        if (threadId) {
-          const historyData = request.headers.get('x-conversation-history')
-          if (historyData) {
-            try {
-              conversationHistory = JSON.parse(historyData)
-            } catch (error) {
-              console.warn('Failed to parse conversation history:', error)
-            }
-          }
-        }
+        const messageHistory = conversationHistory || []
+        console.log(`Chat API - Loaded ${messageHistory.length} messages from conversation history`)
 
         responseMessage = await service.sendMessage(
           message,
-          conversationHistory,
+          messageHistory,
           model || 'gpt-4o-mini',
           reasoningEffort,
           verbosity,
