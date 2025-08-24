@@ -49,6 +49,7 @@ export default function ChatInterface() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<ChatMessage[]>([])
   const [exportStartIndex, setExportStartIndex] = useState<number>(0)
+  const [isCreatingDocument, setIsCreatingDocument] = useState(false)
 
   useEffect(() => {
     if (provider === 'openai-assistant') {
@@ -192,6 +193,67 @@ export default function ChatInterface() {
     setIsExportDialogOpen(true)
   }
 
+  const handleEditFromMessage = async (messageIndex: number) => {
+    // Edit from this message onwards (include all subsequent messages)
+    const messagesToEdit = messages.slice(messageIndex)
+    
+    if (messagesToEdit.length === 0) {
+      alert('No messages to create document from')
+      return
+    }
+
+    setIsCreatingDocument(true)
+
+    try {
+      // Get template data from session storage if available
+      const templateChatData = sessionStorage.getItem('template-chat-init')
+      let templateData = undefined
+      
+      if (templateChatData) {
+        try {
+          const data = JSON.parse(templateChatData)
+          templateData = data.templateData
+        } catch (error) {
+          console.warn('Could not parse template data:', error)
+        }
+      }
+
+      // Send selected messages to document-editor
+      const response = await fetch('http://localhost:3004/api/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: templateData?.documentName || `Document_from_message_${messageIndex + 1}_${new Date().toISOString().split('T')[0]}`,
+          chatMessages: messagesToEdit.map(msg => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp).toISOString()
+          })),
+          templateData,
+          source: 'chatui'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create document')
+      }
+
+      const result = await response.json()
+      
+      // Open document-editor in new tab/window
+      const editUrl = `http://localhost:3004${result.editUrl}`
+      window.open(editUrl, '_blank')
+
+    } catch (error: any) {
+      console.error('Document creation error:', error)
+      alert(`Failed to create document: ${error.message}`)
+    } finally {
+      setIsCreatingDocument(false)
+    }
+  }
+
   const handleConfirmExport = async (content: string, title: string, format: 'pdf' | 'docx' | 'markdown' | 'html') => {
     setIsExporting(true)
 
@@ -324,6 +386,64 @@ export default function ChatInterface() {
     }
   }
 
+  const createDocumentForEditing = async () => {
+    if (messages.length === 0) {
+      alert('No messages to create document from')
+      return
+    }
+
+    setIsCreatingDocument(true)
+
+    try {
+      // Get template data from session storage if available
+      const templateChatData = sessionStorage.getItem('template-chat-init')
+      let templateData = undefined
+      
+      if (templateChatData) {
+        try {
+          const data = JSON.parse(templateChatData)
+          templateData = data.templateData
+        } catch (error) {
+          console.warn('Could not parse template data:', error)
+        }
+      }
+
+      // Send conversation to document-editor
+      const response = await fetch('http://localhost:3004/api/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: templateData?.documentName || `Document_${new Date().toISOString().split('T')[0]}`,
+          chatMessages: messages.map(msg => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp).toISOString()
+          })),
+          templateData,
+          source: 'chatui'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create document')
+      }
+
+      const result = await response.json()
+      
+      // Open document-editor in new tab/window
+      const editUrl = `http://localhost:3004${result.editUrl}`
+      window.open(editUrl, '_blank')
+
+    } catch (error: any) {
+      console.error('Document creation error:', error)
+      alert(`Failed to create document: ${error.message}`)
+    } finally {
+      setIsCreatingDocument(false)
+    }
+  }
+
   return (
     <div className="flex h-screen">
       {/* Sidebar with Multi-Provider Chat Controls */}
@@ -387,6 +507,22 @@ export default function ChatInterface() {
         </div>
         
         <div className="mt-auto pt-4 space-y-3">
+          {/* Edit Document Section */}
+          {messages.length > 0 && (
+            <div>
+              <button
+                onClick={createDocumentForEditing}
+                disabled={isCreatingDocument}
+                className="w-full px-4 py-3 text-sm bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-md transition-colors disabled:cursor-not-allowed font-medium"
+              >
+                {isCreatingDocument ? 'Creating Document...' : '✏️ Edit Document'}
+              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                Open in document editor for professional editing
+              </p>
+            </div>
+          )}
+
           {/* Export Document Section */}
           {messages.length > 0 && (
             <div>
@@ -441,6 +577,7 @@ export default function ChatInterface() {
           messages={messages} 
           isLoading={isLoading}
           onExportFromMessage={handleExportFromMessage}
+          onEditFromMessage={handleEditFromMessage}
         />
         
         <MessageInput 
